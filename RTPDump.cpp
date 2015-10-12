@@ -1,11 +1,18 @@
 #include "RTPDump.h"
-#include <arpa/inet.h>
 #include <iostream>
+#include "Poco/Net/SocketDefs.h"
 
 RTPDump::RTPDump(std::string& fileName) : 
     m_is_video_begin(0),
     m_flv(NULL),
     is_sps_pps_ok(0),
+    audioLastTimestamp(0),
+    audioLastTime(0),
+    base_audio_time(0),
+    videoLastTimestamp(0),
+    videoLastTime(0),
+    base_video_time(0),
+    m_length(0),
     m_logger(Poco::Logger::get("RTPDump"))
 {
     m_flv = srs_flv_open_write(fileName.c_str());
@@ -73,13 +80,13 @@ void RTPDump::rtpHandler(char* buf, int len)
         {
             // rtp payload type is PCMA
             if(m_is_video_begin)
-                audioHandler(buf + 12, len - 12, ntohl(rh->ts), rh->m);
+                audioHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
             break;
         }
         case 98 :
         {
             // rtp payload type is H264
-            videoHandler(buf + 12, len - 12, ntohl(rh->ts), rh->m);
+            videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
             break;
         }
         default :
@@ -89,12 +96,8 @@ void RTPDump::rtpHandler(char* buf, int len)
     }
 }
 
-void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, u_int time, bool marker)
+void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker)
 {
-    static u_int32_t audioLastTimestamp = 0;
-    static u_int audioLastTime = 0;
-    static u_int base_audio_time = 0;
-
     u_int32_t timestamp;
     if (base_audio_time == 0)
     {
@@ -125,12 +128,9 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, u_int time, boo
     audioLastTime = time;
 }
 
-void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, u_int time, bool marker)
+void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool marker)
 {
     u_int32_t timestamp;
-    static u_int lastTime = 0;
-    static u_int32_t lastTimestamp;
-    static u_int base_video_time = 0;
 
     if (base_video_time == 0)
     {
@@ -138,23 +138,19 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, u_int time, bool 
     }
 
     timestamp = (time - base_video_time) / 90;
-    float time_diff = (float)(time - lastTime) / 90;
+    float time_diff = (float)(time - videoLastTime) / 90;
 
     //std::cout << "size = " << h264_len << std::endl;
 
     if(time_diff > 1000)
     {
-        timestamp = lastTimestamp + 33;
+        timestamp = videoLastTimestamp + 33;
         base_video_time = time;
     }
-    lastTimestamp = timestamp;
+    videoLastTimestamp = timestamp;
 
     if(is_sps_pps_ok != 2)
     {
-        static char sps[128];
-        static int sps_size;
-        static char pps[128];
-        static int pps_size;
         if((h264_buf[0] & 0xf) == 7)
         {
             memcpy(sps, h264_buf, h264_len);
@@ -181,9 +177,6 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, u_int time, bool 
     {
         if((h264_buf[0] & 0xf) == 5|| (h264_buf[0] & 0xf) == 1)
         {
-            static char video_data[512*1024];
-            static unsigned int m_length = 0;
-
             char *pp = (char*)&h264_len;
             char *p = video_data + 5 + m_length;
             p[0] = pp[3];
@@ -213,7 +206,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, u_int time, bool 
         }
     }
 	
-    lastTime = time;
+    videoLastTime = time;
     m_is_video_begin = 1;
 }
 
