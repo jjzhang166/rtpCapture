@@ -49,6 +49,9 @@ private:
     char video_data[512*1024];
     unsigned int m_length;
     
+    char m_nal_data[256*1024];
+    unsigned int m_nal_length;
+    
     int m_videoFrequency;
     
     Poco::Logger&       m_logger;

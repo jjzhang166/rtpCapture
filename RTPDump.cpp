@@ -13,6 +13,7 @@ RTPDump::RTPDump(std::string& fileName, int videoFrequency) :
     videoLastTime(0),
     base_video_time(0),
     m_length(0),
+    m_nal_length(0),
     m_logger(Poco::Logger::get("RTPDump"))
 {
     m_videoFrequency = videoFrequency / 1000;
@@ -85,6 +86,33 @@ void RTPDump::rtpHandler(char* buf, int len)
                 audioHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
             break;
         }
+        case 96 :
+        {
+            // DynamicRTP-Type-96 rtsp camera
+            char* h264_buf = buf + 12;
+            u_int32_t h264_len = len - 12;
+            if((h264_buf[0] & 0x1f) == 28)   // FU-A
+            {
+                if(h264_buf[1] & 0x80) // NAL Start
+                {
+                    m_nal_data[0] = ((h264_buf[0] & 0xe0) | (h264_buf[1] & 0x1f));
+                    m_nal_length = 1;
+                }
+                memcpy(m_nal_data + m_nal_length, h264_buf + 2, h264_len - 2);
+                m_nal_length += (h264_len - 2);
+                
+                if(h264_buf[1] & 0x40) // NAL End
+                {
+                    videoHandler(m_nal_data, m_nal_length, poco_ntoh_32(rh->ts), rh->m);
+                }                
+            }
+            else
+            {
+                videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
+            }
+            break;
+            
+        }
         case 98 :
         {
             // rtp payload type is H264
@@ -153,14 +181,14 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
 
     if(is_sps_pps_ok != 2)
     {
-        if((h264_buf[0] & 0xf) == 7)
+        if((h264_buf[0] & 0x1f) == 7)
         {
             memcpy(sps, h264_buf, h264_len);
             sps_size = h264_len;
             is_sps_pps_ok++;
         }
 
-        if((h264_buf[0] & 0xf) == 8)
+        if((h264_buf[0] & 0x1f) == 8)
         {
             is_sps_pps_ok++;
             memcpy(pps, h264_buf, h264_len);
@@ -177,7 +205,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
     }
     else
     {
-        if((h264_buf[0] & 0xf) == 5|| (h264_buf[0] & 0xf) == 1)
+        if((h264_buf[0] & 0x1f) == 5|| (h264_buf[0] & 0x1f) == 1)
         {
             char *pp = (char*)&h264_len;
             char *p = video_data + 5 + m_length;
@@ -192,7 +220,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
 
 			if(marker)
             {
-                if((h264_buf[0] & 0xf) == 5)
+                if((h264_buf[0] & 0x1f) == 5)
                     memcpy(video_data, "\x17\x01\x00\x00\x00", 5); // AVCVIDEOPACKET
                 else
                     memcpy(video_data, "\x27\x01\x00\x00\x00", 5); // AVCVIDEOPACKET
