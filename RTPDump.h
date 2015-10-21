@@ -22,7 +22,7 @@ private:
     }rtp_header;
 
 public:
-    RTPDump(std::string& fileName);
+    RTPDump(std::string& fileName, int videoFrequency);
     ~RTPDump();
     void videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool marker);
     void audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker);
@@ -48,6 +48,8 @@ private:
     int pps_size;
     char video_data[512*1024];
     unsigned int m_length;
+    
+    int m_videoFrequency;
     
     Poco::Logger&       m_logger;
 };

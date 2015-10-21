@@ -22,7 +22,7 @@ void CaptureCenter::addCaptureRtpSession(RTPSession *s)
 {
     Poco::FastMutex::ScopedLock lock(m_sessionVectorMutex);
     m_logger.information("addCaptureRtpSession...");
-    s->rtpDump = new RTPDump(s->fileName);
+    s->rtpDump = new RTPDump(s->fileName, s->videoFrequency);
     m_sessionVector.push_back(s);
 }
 

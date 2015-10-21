@@ -11,8 +11,8 @@ RTPCaptureSDK::RTPCaptureSDK():
     m_logger(Poco::Logger::get("RTPCaptureSDK"))
 {
     Poco::FormattingChannel* Fchannel = new Poco::FormattingChannel(new Poco::PatternFormatter("%Y-%m-%d %H:%M:%S.%i [%T]:[%q] %s: %t"));
-    Fchannel->setChannel(new Poco::FileChannel("sample.log"));
-    Fchannel->getChannel()->setProperty("rotation", "1 M");
+    Fchannel->setChannel(new Poco::FileChannel("log/sample.log"));
+    Fchannel->getChannel()->setProperty("rotation", "10 M");
     Poco::Logger::root().setChannel(Fchannel);
     
     m_thread.setName("T1");

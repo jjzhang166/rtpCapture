@@ -1,41 +1,38 @@
 #include <iostream>
-#include "UDPServer.h"
-
-#include "Poco/Logger.h"
-#include "Poco/AutoPtr.h"
-#include "Poco/FileChannel.h"
-#include "Poco/PatternFormatter.h"
-#include "Poco/FormattingChannel.h"
+#include "RTPCaptureSDK.h"
 
 using namespace std;
 
 int main(int argc, char* argv[])
-{
-    Poco::FormattingChannel* Fchannel = new Poco::FormattingChannel(new Poco::PatternFormatter("%Y-%m-%d %H:%M:%S.%i [%T]:[%q] %s: %t"));
-    Fchannel->setChannel(new Poco::FileChannel("sample.log"));
-    Fchannel->getChannel()->setProperty("rotation", "1 M");
-    Poco::Logger::root().setChannel(Fchannel);
-    Poco::Logger& logger = Poco::Logger::get("main"); // inherits root channel
-    
+{   
     // init sdk
-    UDPServer udpServer;
-    logger.information("init sdk ...");
+    RTPCaptureSDK sdk;
     
     // add one session
-    int fd1 = udpServer.addCaptureRtpSession("test1.flv",45255);
+    int fd0 = sdk.addCaptureRtpSession("movie/danbin.flv",45254, 90000);
     
     // add one session
-    int fd2 = udpServer.addCaptureRtpSession("test2.flv",45256);
+    int fd1 = sdk.addCaptureRtpSession("movie/fangwei.flv",45255, 90000);
+    
+    // add one session
+    int fd2 = sdk.addCaptureRtpSession("movie/yilian.flv",45256, 60000);
+    
+    std::cout << "RTP Session 1 : listen UDP port [45254] , capture file [danbin.flv] , video frequency [90000]" << std::endl;
+    std::cout << "RTP Session 2 : listen UDP port [45254] , capture file [fangwei.flv] , video frequency [90000]" << std::endl;
+    std::cout << "RTP Session 3 : listen UDP port [45254] , capture file [yilian.flv] , video frequency [60000]" << std::endl;
+    /*
+    // add one session
+    int fd3 = sdk.addCaptureRtpSession("test3.flv",45257, 90000);
+    
+    // add one session
+    int fd4 = sdk.addCaptureRtpSession("test4.flv",45258, 90000);
+    
+    // del one session not exit
+    sdk.delCaptureRtpSession(9);
     
     // del one session
-    udpServer.delCaptureRtpSession(9);
-    
-    
-    // del one session
-    udpServer.delCaptureRtpSession(fd2);
-    
-    logger.information("go go go");
-    
+    sdk.delCaptureRtpSession(fd4);
+    */
    	while(1)
    	{
         Poco::Thread::sleep(1000);

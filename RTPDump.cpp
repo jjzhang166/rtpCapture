@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Poco/Net/SocketDefs.h"
 
-RTPDump::RTPDump(std::string& fileName) : 
+RTPDump::RTPDump(std::string& fileName, int videoFrequency) : 
     m_is_video_begin(0),
     m_flv(NULL),
     is_sps_pps_ok(0),
@@ -15,6 +15,8 @@ RTPDump::RTPDump(std::string& fileName) :
     m_length(0),
     m_logger(Poco::Logger::get("RTPDump"))
 {
+    m_videoFrequency = videoFrequency / 1000;
+    //std::cout << m_videoFrequency << std::endl;
     m_flv = srs_flv_open_write(fileName.c_str());
     if (m_flv) 
     {
@@ -137,8 +139,8 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
         base_video_time = time;
     }
 
-    timestamp = (time - base_video_time) / 90;
-    float time_diff = (float)(time - videoLastTime) / 90;
+    timestamp = (time - base_video_time) / m_videoFrequency;
+    float time_diff = (float)(time - videoLastTime) / m_videoFrequency;
 
     //std::cout << "size = " << h264_len << std::endl;
 
