@@ -35,12 +35,10 @@ private:
     int                 is_sps_pps_ok;
     
     // audio
-    u_int32_t audioLastTimestamp;
     int audioLastTime;
     int base_audio_time;
     
     // video
-    u_int32_t videoLastTimestamp;
     int videoLastTime;
     int base_video_time;
     

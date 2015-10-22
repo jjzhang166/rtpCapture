@@ -6,10 +6,8 @@ RTPDump::RTPDump(std::string& fileName, int videoFrequency) :
     m_is_video_begin(0),
     m_flv(NULL),
     is_sps_pps_ok(0),
-    audioLastTimestamp(0),
     audioLastTime(0),
     base_audio_time(0),
-    videoLastTimestamp(0),
     videoLastTime(0),
     base_video_time(0),
     m_length(0),
@@ -169,17 +167,18 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool 
     if (base_audio_time == 0)
     {
         base_audio_time = time;
+        audioLastTime = time;
     }
 
-    timestamp = (time - base_audio_time) / 8;
     float time_diff = (float)(time - audioLastTime)/8;
-
-    if(time_diff > 1000)
+    if(time_diff > 5000) // 5 second
     {
-        timestamp = audioLastTimestamp + 33;
-        base_audio_time = time;
+        m_logger.warning("Session which FileName[%s] its audio package timestamp[%d], last package timestamp[%d] , diff time is[%d] millisecond.", 
+                            m_outputFileName, time, audioLastTime, (int)time_diff);
+        base_audio_time = base_audio_time + (time - audioLastTime);
     }
-    audioLastTimestamp = timestamp;
+    timestamp = (time - base_audio_time) / 8;
+    audioLastTime = time;
 
     if (timestamp > 1)
     {
@@ -192,7 +191,6 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool 
             //TODO
         }
     }
-    audioLastTime = time;
 }
 
 void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool marker)
@@ -202,20 +200,20 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
     if (base_video_time == 0)
     {
         base_video_time = time;
+        videoLastTime = time;
     }
 
-    timestamp = (time - base_video_time) / m_videoFrequency;
     float time_diff = (float)(time - videoLastTime) / m_videoFrequency;
-
-    //std::cout << "size = " << h264_len << std::endl;
-
-    if(time_diff > 1000)
+    if(time_diff > 5000)    // 5 second
     {
-        timestamp = videoLastTimestamp + 33;
-        base_video_time = time;
+        m_logger.warning("Session which FileName[%s] its video package timestamp[%d], last package timestamp[%d] , diff time is[%d] millisecond.", 
+                            m_outputFileName, time, videoLastTime, (int)time_diff);
+        base_video_time = base_video_time + (time - videoLastTime);
     }
-    videoLastTimestamp = timestamp;
-
+    timestamp = (time - base_video_time) / m_videoFrequency;
+    videoLastTime = time;
+    //std::cout << "time_diff = " << time_diff  << "  time = " << time << "  timestamp = " << timestamp << std::endl;
+    
     if(is_sps_pps_ok != 2)
     {
         if((h264_buf[0] & 0x1f) == 7)
@@ -272,8 +270,6 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
             }
         }
     }
-	
-    videoLastTime = time;
     m_is_video_begin = 1;
 }
 

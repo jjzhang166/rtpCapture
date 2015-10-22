@@ -29,7 +29,7 @@ void RTPHandler::onSocketReadable(const Poco::AutoPtr<Poco::Net::ReadableNotific
         node.len = n;
         m_session->bufferList.push_back(node);
         
-        m_logger.information("receive : %d", n);
+        //m_logger.information("receive : %d", n);
         //std::cout << "receive : " << n << std::endl;
         //std::cout << "pool allocated : " << m_memoryPool.allocated() << std::endl;
         //std::cout << "pool available : " << m_memoryPool.available() << std::endl;
