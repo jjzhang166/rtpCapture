@@ -14,11 +14,16 @@ RTPDump::RTPDump(std::string& fileName, int videoFrequency) :
     base_video_time(0),
     m_length(0),
     m_nal_length(0),
+    m_cameraType(DEFAULT),
+    m_outputFileName(fileName),
     m_logger(Poco::Logger::get("RTPDump"))
 {
     m_videoFrequency = videoFrequency / 1000;
-    //std::cout << m_videoFrequency << std::endl;
-    m_flv = srs_flv_open_write(fileName.c_str());
+}
+
+bool RTPDump::initFLVHeader(void)
+{
+    m_flv = srs_flv_open_write(m_outputFileName.c_str());
     if (m_flv) 
     {
         // flv header
@@ -58,11 +63,6 @@ RTPDump::~RTPDump()
 
 void RTPDump::rtpHandler(char* buf, int len)
 {
-    if(m_flv ==NULL)
-    {
-        std::cout << "FLV file open error." << std::endl;
-        return;
-    }
     if(len < 12)    // rtp must more than 12 bytes
     {
         std::cout << "not a rtp packet." << std::endl;
@@ -91,30 +91,67 @@ void RTPDump::rtpHandler(char* buf, int len)
             // DynamicRTP-Type-96 rtsp camera
             char* h264_buf = buf + 12;
             u_int32_t h264_len = len - 12;
-            if((h264_buf[0] & 0x1f) == 28)   // FU-A
+            
+            // detect camera type
+            if(m_cameraType == DEFAULT)
             {
-                if(h264_buf[1] & 0x80) // NAL Start
+                if(h264_buf[0] == 0|| h264_buf[1] == 0 || h264_buf[2] == 1)
                 {
-                    m_nal_data[0] = ((h264_buf[0] & 0xe0) | (h264_buf[1] & 0x1f));
-                    m_nal_length = 1;
+                    m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
+                    m_cameraType = PS_CAMERA;
                 }
-                memcpy(m_nal_data + m_nal_length, h264_buf + 2, h264_len - 2);
-                m_nal_length += (h264_len - 2);
-                
-                if(h264_buf[1] & 0x40) // NAL End
+                else if((h264_buf[0] == 0x67) || (h264_buf[0] == 0x68) ||((h264_buf[0] & 0x1f) == 28))
                 {
-                    videoHandler(m_nal_data, m_nal_length, poco_ntoh_32(rh->ts), rh->m);
-                }                
+                    m_cameraType = RTSP_CAMERA;
+                    if(m_flv == NULL)
+                    {
+                        if(!initFLVHeader())
+                            break;
+                    }
+                }
+                else
+                {
+                    m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
+                    m_cameraType = PS_CAMERA;
+                }
             }
-            else
+
+            if(m_cameraType == RTSP_CAMERA)
             {
-                videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
+                if((h264_buf[0] & 0x1f) == 28)   // FU-A
+                {
+                    if(h264_buf[1] & 0x80) // NAL Start
+                    {
+                        m_nal_data[0] = ((h264_buf[0] & 0xe0) | (h264_buf[1] & 0x1f));
+                        m_nal_length = 1;
+                    }
+                    memcpy(m_nal_data + m_nal_length, h264_buf + 2, h264_len - 2);
+                    m_nal_length += (h264_len - 2);
+                    
+                    if(h264_buf[1] & 0x40) // NAL End
+                    {
+                        videoHandler(m_nal_data, m_nal_length, poco_ntoh_32(rh->ts), rh->m);
+                    }                
+                }
+                else
+                {
+                    videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
+                }
+            }
+            else if(m_cameraType == PS_CAMERA)
+            {
+                m_psOutfile.write (h264_buf, h264_len);
             }
             break;
             
         }
         case 98 :
         {
+            if(m_flv == NULL)
+            {
+                if(!initFLVHeader())
+                    break;
+            }
             // rtp payload type is H264
             videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
             break;

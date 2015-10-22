@@ -1,12 +1,14 @@
 #ifndef RTPDUMP_H
 #define RTPDUMP_H
 
+#include <fstream>
 #include "Poco/Logger.h"
 #include "srs_librtmp.h"
 
 class RTPDump
 {
 private:
+    enum CameraType{DEFAULT, RTSP_CAMERA, PS_CAMERA};
     typedef struct rtp_header
     {
         u_int16_t cc : 4;         // CSRC count
@@ -20,7 +22,7 @@ private:
         u_int32_t ts;               // timestamp
         u_int32_t ssrc;             // synchronization source
     }rtp_header;
-
+    bool initFLVHeader(void);
 public:
     RTPDump(std::string& fileName, int videoFrequency);
     ~RTPDump();
@@ -51,6 +53,11 @@ private:
     
     char m_nal_data[256*1024];
     unsigned int m_nal_length;
+    CameraType  m_cameraType;
+    
+    std::ofstream m_psOutfile;
+    
+    std::string m_outputFileName;
     
     int m_videoFrequency;
     
