@@ -23,11 +23,13 @@ public:
     }
     int         SessionID;          // session id
     int         videoFrequency;     // default is 90000
-    int         listenPort;         // listen ip is 0.0.0.0
+    int         listenVideoPort;    // for video listen udp port
+    int         listenAudioPort;    // for audio listen udp port
     std::string fileName;           // record rtp stream file name
 
     RTPDump*                    rtpDump;
-    RTPHandler*                 handler;
+    RTPHandler*                 videoHandler;
+    RTPHandler*                 audioHandler;
     Poco::FastMutex             bufferMutex;
     std::vector<buffer_node>    bufferList;
 private:

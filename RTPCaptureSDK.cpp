@@ -24,7 +24,7 @@ RTPCaptureSDK::~RTPCaptureSDK()
 {
 }
 
-int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenPort, int videoFrequency)
+int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenVideoPort, int listenAudioPort, int videoFrequency)
 {
     // TODO 如果端口、文件名已经存在异常处理
     
@@ -32,21 +32,29 @@ int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenPort, in
     
     RTPSession  *s = new RTPSession;
     s->fileName = fileName;
-    s->listenPort  = listenPort;
+    s->listenVideoPort  = listenVideoPort;
+    s->listenAudioPort = listenAudioPort;
     s->videoFrequency = videoFrequency;
     
-    Poco::Net::DatagramSocket socket;
-    socket.bind(Poco::Net::SocketAddress("0.0.0.0", listenPort), true);
-    RTPHandler * h = new RTPHandler(socket, m_reactor, m_memoryPool, s);
-    
-    s->handler = h;
+    {
+        Poco::Net::DatagramSocket videoSocket;
+        videoSocket.bind(Poco::Net::SocketAddress("0.0.0.0", listenVideoPort), true);
+        RTPHandler * h = new RTPHandler(videoSocket, m_reactor, m_memoryPool, s);
+        s->videoHandler = h;
+    }
+    {
+        Poco::Net::DatagramSocket audioSocket;
+        audioSocket.bind(Poco::Net::SocketAddress("0.0.0.0", listenAudioPort), true);
+        RTPHandler * h = new RTPHandler(audioSocket, m_reactor, m_memoryPool, s);
+        s->audioHandler = h;
+    }
     
     m_captureCenter.addCaptureRtpSession(s);
     
     m_sessionVector.push_back(s);
     
-    m_logger.information("Add Session sessionid[%d] listenPort[%d] fileName[%s] videoFrequency[%d] success.",\
-    s->SessionID, s->listenPort, s->fileName, s->videoFrequency);
+    m_logger.information("Add Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
+    s->SessionID, s->listenVideoPort, s->listenAudioPort, s->fileName, s->videoFrequency);
     
     return s->SessionID;
 }
@@ -58,8 +66,8 @@ void RTPCaptureSDK::delCaptureRtpSession(int session)
     
     if(result !=m_sessionVector.end())
     {
-        m_logger.information("Del Session sessionid[%d] listenPort[%d] fileName[%s] videoFrequency[%d] success.",\
-        (*result)->SessionID, (*result)->listenPort, (*result)->fileName, (*result)->videoFrequency);
+        m_logger.information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
+        (*result)->SessionID, (*result)->listenVideoPort, (*result)->listenAudioPort, (*result)->fileName, (*result)->videoFrequency);
         
         m_sessionVector.erase(result);
     }

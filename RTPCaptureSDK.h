@@ -19,7 +19,7 @@ public:
 	~RTPCaptureSDK();
 		/// Destroys the RTPCaptureSDK.
         
-    int addCaptureRtpSession(std::string fileName, int listenPort, int videoFrequency = 90000);
+    int addCaptureRtpSession(std::string fileName, int listenVideoPort, int listenAudioPort, int videoFrequency = 90000);
     void delCaptureRtpSession(int session);
 
 private:
