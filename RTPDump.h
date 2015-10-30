@@ -9,6 +9,7 @@ class RTPDump
 {
 private:
     enum CameraType{DEFAULT, RTSP_CAMERA, PS_CAMERA};
+    enum AudioType{U_LAW, A_LAW};
     typedef struct rtp_header
     {
         u_int16_t cc : 4;         // CSRC count
@@ -27,7 +28,7 @@ public:
     RTPDump(std::string& fileName, int videoFrequency);
     ~RTPDump();
     void videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool marker);
-    void audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker);
+    void audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker, AudioType type);
     void rtpHandler(char* buf, int len);
 private:
     int                 m_is_video_begin;

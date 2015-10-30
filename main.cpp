@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 {
     rtp_session sessions[] = {{"movie/danbin.flv",45250, 45251, 90000}, {"movie/fangwei.flv",45252, 45253, 90000},\
                               {"movie/yilian.flv",45254, 45255, 60000}, {"movie/rtsp.flv",45256, 45257, 90000},\
-                              {"movie/ps.vob",45258, 45259, 90000}};
+                              {"movie/ps.vob",45258, 45259, 90000}, {"movie/chaoliu.flv",45260, 45261, 90000}};
     int fd[5];
     
     // init sdk

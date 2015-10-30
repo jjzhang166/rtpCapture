@@ -69,99 +69,83 @@ void RTPDump::rtpHandler(char* buf, int len)
 
     // Serialization rtp
     rtp_header *rh = (rtp_header *)((u_char*)buf);
+    char* h264_buf = buf + 12;
+    u_int32_t h264_len = len - 12;
 
     if(rh->version != 2)  // rtp version must equal 2 , RFC1889
     {
         return;
     }
 
-    switch(rh->pt)
+    if(rh->pt == 0 || rh->pt == 8) // rtp payload type is PCMU(0) PCMA(8)
+    {        
+        if(m_is_video_begin)
+            audioHandler(h264_buf, h264_len, poco_ntoh_32(rh->ts), rh->m, rh->pt == 0 ? U_LAW : A_LAW);
+        return;
+    }
+    else if(rh->pt == 96) // DynamicRTP-Type-96 rtsp camera
+    {         
+        // detect camera type
+        if(m_cameraType == DEFAULT)
+        {
+            if(h264_buf[0] == 0|| h264_buf[1] == 0 || h264_buf[2] == 1)
+            {
+                m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
+                m_cameraType = PS_CAMERA;
+            }
+            else if((h264_buf[0] == 0x67) || (h264_buf[0] == 0x68) ||((h264_buf[0] & 0x1f) == 28))
+            {
+                m_cameraType = RTSP_CAMERA;
+            }
+            else
+            {
+                m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
+                m_cameraType = PS_CAMERA;
+            }
+        }
+        
+        if(m_cameraType == PS_CAMERA)
+        {
+            m_psOutfile.write (h264_buf, h264_len);
+            return;
+        }
+    }
+    else if(rh->pt == 98)
     {
-        case 8 :
+    }
+    else
+    {
+        return;
+    }
+    
+    if(m_flv == NULL)
+    {
+        if(!initFLVHeader())
+            return;
+    }
+    
+    if((h264_buf[0] & 0x1f) == 28)   // FU-A
+    {
+        if(h264_buf[1] & 0x80) // NAL Start
         {
-            // rtp payload type is PCMA
-            if(m_is_video_begin)
-                audioHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
-            break;
+            m_nal_data[0] = ((h264_buf[0] & 0xe0) | (h264_buf[1] & 0x1f));
+            m_nal_length = 1;
         }
-        case 96 :
+        memcpy(m_nal_data + m_nal_length, h264_buf + 2, h264_len - 2);
+        m_nal_length += (h264_len - 2);
+        
+        if(h264_buf[1] & 0x40) // NAL End
         {
-            // DynamicRTP-Type-96 rtsp camera
-            char* h264_buf = buf + 12;
-            u_int32_t h264_len = len - 12;
-            
-            // detect camera type
-            if(m_cameraType == DEFAULT)
-            {
-                if(h264_buf[0] == 0|| h264_buf[1] == 0 || h264_buf[2] == 1)
-                {
-                    m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
-                    m_cameraType = PS_CAMERA;
-                }
-                else if((h264_buf[0] == 0x67) || (h264_buf[0] == 0x68) ||((h264_buf[0] & 0x1f) == 28))
-                {
-                    m_cameraType = RTSP_CAMERA;
-                    if(m_flv == NULL)
-                    {
-                        if(!initFLVHeader())
-                            break;
-                    }
-                }
-                else
-                {
-                    m_psOutfile.open(m_outputFileName.c_str(),std::ofstream::binary);
-                    m_cameraType = PS_CAMERA;
-                }
-            }
-
-            if(m_cameraType == RTSP_CAMERA)
-            {
-                if((h264_buf[0] & 0x1f) == 28)   // FU-A
-                {
-                    if(h264_buf[1] & 0x80) // NAL Start
-                    {
-                        m_nal_data[0] = ((h264_buf[0] & 0xe0) | (h264_buf[1] & 0x1f));
-                        m_nal_length = 1;
-                    }
-                    memcpy(m_nal_data + m_nal_length, h264_buf + 2, h264_len - 2);
-                    m_nal_length += (h264_len - 2);
-                    
-                    if(h264_buf[1] & 0x40) // NAL End
-                    {
-                        videoHandler(m_nal_data, m_nal_length, poco_ntoh_32(rh->ts), rh->m);
-                    }                
-                }
-                else
-                {
-                    videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
-                }
-            }
-            else if(m_cameraType == PS_CAMERA)
-            {
-                m_psOutfile.write (h264_buf, h264_len);
-            }
-            break;
-            
-        }
-        case 98 :
-        {
-            if(m_flv == NULL)
-            {
-                if(!initFLVHeader())
-                    break;
-            }
-            // rtp payload type is H264
-            videoHandler(buf + 12, len - 12, poco_ntoh_32(rh->ts), rh->m);
-            break;
-        }
-        default :
-        {
-            break;
-        }
+            videoHandler(m_nal_data, m_nal_length, poco_ntoh_32(rh->ts), rh->m);
+        }                
+    }
+    else
+    {
+        videoHandler(h264_buf, h264_len, poco_ntoh_32(rh->ts), rh->m);
     }
 }
 
-void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker)
+void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool marker, AudioType type)
 {
     u_int32_t timestamp;
     if (base_audio_time == 0)
@@ -171,7 +155,7 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool 
     }
 
     float time_diff = (float)(time - audioLastTime)/8;
-    if(time_diff > 5000) // 5 second
+    if(time_diff > 1000) // 1 second
     {
         m_logger.warning("Session which FileName[%s] its audio package timestamp[%d], last package timestamp[%d] , diff time is[%d] millisecond.", 
                             m_outputFileName, time, audioLastTime, (int)time_diff);
@@ -183,7 +167,10 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool 
     if (timestamp > 1)
     {
         char *audio_header = audio_buf -1;
-        *audio_header = 0x72;
+        if(type == A_LAW)
+            *audio_header = 0x72;
+        else if(type == U_LAW)
+            *audio_header = 0x82;
 
         if (srs_flv_write_tag(m_flv, SRS_RTMP_TYPE_AUDIO, timestamp, audio_header, audio_len + 1) != 0) 
         {
@@ -204,7 +191,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
     }
 
     float time_diff = (float)(time - videoLastTime) / m_videoFrequency;
-    if(time_diff > 5000)    // 5 second
+    if(time_diff > 1000)    // 1 second
     {
         m_logger.warning("Session which FileName[%s] its video package timestamp[%d], last package timestamp[%d] , diff time is[%d] millisecond.", 
                             m_outputFileName, time, videoLastTime, (int)time_diff);
