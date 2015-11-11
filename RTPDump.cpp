@@ -215,7 +215,13 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
         if((h264_buf[0] & 0x1f) == 8)
         {
             is_sps_pps_ok++;
-            pps_size = h264_len > 4 ? 4 : h264_len;
+            pps_size = h264_len;
+            if(h264_len > 50)
+            {
+                m_logger.warning("Session which FileName[%s] its video PPS size [%d] is to big , make it 4bytes", 
+                            m_outputFileName, h264_len);
+                pps_size = 4;
+            }
             memcpy(pps, h264_buf, pps_size);
         }
 
