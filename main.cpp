@@ -1,10 +1,6 @@
 #include <iostream>
 #include "RTPCaptureSDK.h"
 
-#include "Poco/FileChannel.h"
-#include "Poco/PatternFormatter.h"
-#include "Poco/FormattingChannel.h"
-
 using namespace std;
 
 struct rtp_session
@@ -25,13 +21,8 @@ int main(int argc, char* argv[])
     const int size = sizeof(sessions) / sizeof(struct rtp_session);
     int fd[size];
     
-    Poco::FormattingChannel* Fchannel = new Poco::FormattingChannel(new Poco::PatternFormatter("%Y-%m-%d %H:%M:%S.%i [%T]:[%q] %s: %t"));
-    Fchannel->setChannel(new Poco::FileChannel("log/sample.log"));
-    Fchannel->getChannel()->setProperty("rotation", "10 M");
-    Poco::Logger::root().setChannel(Fchannel);
-    
     // init sdk
-    RTPCaptureSDK sdk;
+    RTPCaptureSDK sdk("log/sample.log");
     
     for(int i = 0; i < size; i++)
     {

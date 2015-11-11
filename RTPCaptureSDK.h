@@ -13,7 +13,7 @@
 class RTPCaptureSDK
 {
 public:
-	RTPCaptureSDK();
+	RTPCaptureSDK(std::string logName);
 		/// Creates the RTPCaptureSDK.
 
 	~RTPCaptureSDK();
@@ -30,7 +30,7 @@ private:
     CaptureCenter               m_captureCenter;
     std::vector<RTPSession*>    m_sessionVector;
     Poco::FastMutex             m_sessionVectorMutex;
-    Poco::Logger&               m_logger;
+    //Poco::Logger&               m_logger;
 };
 
 

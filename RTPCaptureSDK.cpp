@@ -5,13 +5,18 @@
 #include "Poco/PatternFormatter.h"
 #include "Poco/FormattingChannel.h"
 
-RTPCaptureSDK::RTPCaptureSDK(): 
+RTPCaptureSDK::RTPCaptureSDK(std::string logName): 
     m_memoryPool(1500, 10, 20000),
-    m_captureCenter(m_memoryPool),
-    m_logger(Poco::Logger::get("RTPCaptureSDK"))
-{    
+    m_captureCenter(m_memoryPool)
+{
+    Poco::FormattingChannel* Fchannel = new Poco::FormattingChannel(
+                        new Poco::PatternFormatter("%Y-%m-%d %H:%M:%S.%i [%T]:[%q] %s: %t"),
+                        new Poco::FileChannel(logName));
+    Fchannel->getChannel()->setProperty("rotation", "10 M");
+    Poco::Logger::root().setChannel(Fchannel);
+    
     m_thread.setName("T1");
-    m_logger.information("memory poll blockSize = %d", (int)m_memoryPool.blockSize());
+    Poco::Logger::get("RTPCaptureSDK").information("memory poll blockSize = %d", (int)m_memoryPool.blockSize());
     m_thread.start(m_reactor);
 }
 
@@ -48,7 +53,7 @@ int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenVideoPor
     
     m_sessionVector.push_back(s);
     
-    m_logger.information("Add Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
+    Poco::Logger::get("RTPCaptureSDK").information("Add Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
     s->SessionID, s->listenVideoPort, s->listenAudioPort, s->fileName, s->videoFrequency);
     
     return s->SessionID;
@@ -61,13 +66,13 @@ void RTPCaptureSDK::delCaptureRtpSession(int session)
     
     if(result !=m_sessionVector.end())
     {
-        m_logger.information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
+        Poco::Logger::get("RTPCaptureSDK").information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
         (*result)->SessionID, (*result)->listenVideoPort, (*result)->listenAudioPort, (*result)->fileName, (*result)->videoFrequency);
         
         m_sessionVector.erase(result);
     }
     else
     {
-        m_logger.information("Del Session sessionid[%d] error, can not find it.", session);
+        Poco::Logger::get("RTPCaptureSDK").information("Del Session sessionid[%d] error, can not find it.", session);
     }
 }
