@@ -9,12 +9,7 @@ RTPCaptureSDK::RTPCaptureSDK():
     m_memoryPool(1500, 10, 20000),
     m_captureCenter(m_memoryPool),
     m_logger(Poco::Logger::get("RTPCaptureSDK"))
-{
-    Poco::FormattingChannel* Fchannel = new Poco::FormattingChannel(new Poco::PatternFormatter("%Y-%m-%d %H:%M:%S.%i [%T]:[%q] %s: %t"));
-    Fchannel->setChannel(new Poco::FileChannel("log/sample.log"));
-    Fchannel->getChannel()->setProperty("rotation", "10 M");
-    Poco::Logger::root().setChannel(Fchannel);
-    
+{    
     m_thread.setName("T1");
     m_logger.information("memory poll blockSize = %d", (int)m_memoryPool.blockSize());
     m_thread.start(m_reactor);

@@ -48,7 +48,9 @@ bool RTPDump::initFLVHeader(void)
     {
         m_flv = NULL;
         std::cout << "open flv file failed." << std::endl;
+        return false;
     }
+    return true;
 }
 
 RTPDump::~RTPDump()
@@ -213,8 +215,8 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
         if((h264_buf[0] & 0x1f) == 8)
         {
             is_sps_pps_ok++;
-            memcpy(pps, h264_buf, h264_len);
-            pps_size = h264_len;
+            pps_size = h264_len > 4 ? 4 : h264_len;
+            memcpy(pps, h264_buf, pps_size);
         }
 
         if(is_sps_pps_ok == 2)

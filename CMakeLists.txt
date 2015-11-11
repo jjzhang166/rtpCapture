@@ -7,6 +7,7 @@ INCLUDE_DIRECTORIES($ENV{PWD}/../../../include/srs)
 LINK_DIRECTORIES($ENV{PWD}/../../../lib/poco)
 LINK_DIRECTORIES($ENV{PWD}/../../../lib/srs)
 SET(EXECUTABLE_OUTPUT_PATH ./release/bin)
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 
 ADD_EXECUTABLE(rtpCapture RTPHandler.cpp RTPDump.cpp CaptureCenter.cpp RTPCaptureSDK.cpp main.cpp)
 
