@@ -9,7 +9,7 @@ LINK_DIRECTORIES($ENV{PWD}/../../../lib/srs)
 SET(EXECUTABLE_OUTPUT_PATH ./release/bin)
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 
-ADD_EXECUTABLE(rtpCapture RTPHandler.cpp RTPDump.cpp CaptureCenter.cpp RTPCaptureSDK.cpp main.cpp)
+ADD_EXECUTABLE(rtpCapture RTPHandler.cpp RTPDump.cpp CaptureCenter.cpp ReceiverCenter.cpp RTPCaptureSDK.cpp main.cpp)
 
 TARGET_LINK_LIBRARIES(rtpCapture pthread)
 TARGET_LINK_LIBRARIES(rtpCapture libPocoUtild.a)

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unistd.h>
 #include "RTPCaptureSDK.h"
 
 using namespace std;
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
     */
    	while(1)
    	{
-        Poco::Thread::sleep(1000);
+        sleep(1);
    	}
     return 0;
 }

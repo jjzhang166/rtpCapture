@@ -3,10 +3,8 @@
 
 #include <iostream>
 #include "Header.h"
-#include "RTPDump.h"
 #include "Poco/Logger.h"
 #include "Poco/Thread.h"
-#include "Poco/Mutex.h"
 #include "Poco/MemoryPool.h"
 
 class CaptureCenter: public Poco::Runnable
@@ -32,4 +30,4 @@ private:
     Poco::Logger&               m_logger;
 };
 
-#endif
+#endif //
