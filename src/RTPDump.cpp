@@ -1,5 +1,4 @@
 #include "RTPDump.h"
-#include <iostream>
 #include "Poco/Net/SocketDefs.h"
 
 RTPDump::RTPDump(std::string& fileName, int videoFrequency) : 
@@ -41,13 +40,13 @@ bool RTPDump::initFLVHeader(void)
         header[8] = 0x09;
         if (srs_flv_write_header(m_flv, header) != 0) 
         {
-            std::cout << "write flv header failed." << std::endl;
+            m_logger.information("write flv file %s header failed.", m_outputFileName.c_str());
         }
     }
     else
     {
         m_flv = NULL;
-        std::cout << "open flv file failed." << std::endl;
+        m_logger.information("open flv file %s failed.", m_outputFileName.c_str());
         return false;
     }
     return true;
@@ -59,13 +58,14 @@ RTPDump::~RTPDump()
     {
         srs_flv_close(m_flv);
     }
+    m_logger.information("Del Session sessionid success.");
 }
 
 void RTPDump::rtpHandler(char* buf, int len)
 {
     if(len < 12)    // rtp must more than 12 bytes
     {
-        std::cout << "not a rtp packet." << std::endl;
+        m_logger.information("Not a rtp packet.");
         return;
     }
 
@@ -176,7 +176,7 @@ void RTPDump::audioHandler(char* audio_buf, u_int32_t audio_len, int time, bool 
 
         if (srs_flv_write_tag(m_flv, SRS_RTMP_TYPE_AUDIO, timestamp, audio_header, audio_len + 1) != 0) 
         {
-            //srs_human_trace("dump rtmp packet failed.");
+             m_logger.warning("Session which FileName[%s] dump rtmp packet failed", m_outputFileName.c_str());
             //TODO
         }
     }
@@ -229,7 +229,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
         {
             if(srs_flv_write_sps_pps_tag(m_flv, timestamp, sps, sps_size, pps, pps_size) != 0)
             {
-                srs_human_trace("dump rtmp packet failed.");
+                m_logger.warning("Session which FileName[%s] dump rtmp packet failed", m_outputFileName.c_str());
             }
         }
     }
@@ -258,7 +258,7 @@ void RTPDump::videoHandler(char* h264_buf, u_int32_t h264_len, int time, bool ma
                 
                 if (srs_flv_write_tag(m_flv, SRS_RTMP_TYPE_VIDEO, timestamp, video_data, m_length + 5) != 0) 
 				{
-					srs_human_trace("dump rtmp packet failed.");
+					m_logger.warning("Session which FileName[%s] dump rtmp packet failed", m_outputFileName.c_str());
                 }
 
                 m_length = 0;

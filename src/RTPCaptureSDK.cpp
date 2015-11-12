@@ -50,6 +50,9 @@ void RTPCaptureSDK::delCaptureRtpSession(int session)
         Poco::Logger::get("RTPCaptureSDK").information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
         (*result)->SessionID, (*result)->listenVideoPort, (*result)->listenAudioPort, (*result)->fileName, (*result)->videoFrequency);
         
+        m_receiverCenter->delCaptureRtpSession(*result);
+        m_captureCenter->delCaptureRtpSession(*result);
+        delete *result;
         m_sessionVector.erase(result);
     }
     else

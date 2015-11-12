@@ -16,14 +16,17 @@ class RTPSession;
 class RTPHandler
 {
 public:
-	RTPHandler(Poco::Net::DatagramSocket socket, Poco::Net::SocketReactor& reactor, Poco::MemoryPool&  memoryPool, RTPSession *s);
+	RTPHandler(Poco::Net::DatagramSocket as, Poco::Net::DatagramSocket vs, \
+                Poco::Net::SocketReactor& reactor, Poco::MemoryPool&  memoryPool, RTPSession *s);
 	
 	~RTPHandler();
 	
-	void onSocketReadable(const Poco::AutoPtr<Poco::Net::ReadableNotification>& pNf);
+	void onAudioSocketReadable(const Poco::AutoPtr<Poco::Net::ReadableNotification>& pNf);
+    void onVideoSocketReadable(const Poco::AutoPtr<Poco::Net::ReadableNotification>& pNf);
 	
 private:	
-	Poco::Net::DatagramSocket   m_socket;
+	Poco::Net::DatagramSocket   m_audioSocket;
+    Poco::Net::DatagramSocket   m_videoSocket;
 	Poco::Net::SocketReactor&   m_reactor;
     Poco::MemoryPool&           m_memoryPool;
     RTPSession*                 m_session;

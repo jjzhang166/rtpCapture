@@ -28,8 +28,7 @@ public:
     std::string fileName;           // record rtp stream file name
 
     RTPDump*                    rtpDump;
-    RTPHandler*                 videoHandler;
-    RTPHandler*                 audioHandler;
+    RTPHandler*                 rtpHandler;
     Poco::FastMutex             bufferMutex;
     std::vector<buffer_node>    bufferList;
 private:
