@@ -18,11 +18,41 @@ ReceiverCenter::~ReceiverCenter()
 {
 }
 
+void ReceiverCenter::onRTPData(int session, char* data, int len)
+{
+    Poco::FastMutex::ScopedLock lock(m_sessionMapMutex);
+    
+    std::map<int,RTPSession*>::iterator r = m_sessionMap.find(session);
+    
+    if(r != m_sessionMap.end())
+    {
+        if(len < m_memoryPool.blockSize())
+        {
+            Poco::Logger::get("RTPCaptureSDK").information("Session [%d] data len[%d] is overflow.", session, len);
+            return;
+        }
+        void *buffer = m_memoryPool.get();
+          
+        RTPSession::buffer_node node;
+        node.buffer = buffer;
+        node.len = len;
+        
+        Poco::FastMutex::ScopedLock lock(r->second->bufferMutex);
+        r->second->bufferList.push_back(node);
+    }
+    else
+    {
+        Poco::Logger::get("RTPCaptureSDK").information("Session [%d] not found when onRTPData call.", session);
+    }
+}
+
 void ReceiverCenter::addCaptureRtpSession(RTPSession *s)
 {
     // TODO 如果端口、文件名已经存在异常处理
     
-    Poco::FastMutex::ScopedLock lock(m_sessionVectorMutex);    
+    Poco::FastMutex::ScopedLock lock(m_sessionMapMutex);
+    s->rtpHandler = NULL;
+    if(s->listenVideoPort != 0 && s->listenAudioPort != 0)
     {
         Poco::Net::DatagramSocket videoSocket;
         videoSocket.bind(Poco::Net::SocketAddress("0.0.0.0", s->listenVideoPort), true);
@@ -34,24 +64,27 @@ void ReceiverCenter::addCaptureRtpSession(RTPSession *s)
         s->rtpHandler = h;
     }
     
-    m_sessionVector.push_back(s);
+    m_sessionMap[s->SessionID] = s;
     
     m_logger.information("Add Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
     s->SessionID, s->listenVideoPort, s->listenAudioPort, s->fileName, s->videoFrequency);
 }
 void ReceiverCenter::delCaptureRtpSession(RTPSession *s)
 {
-    Poco::FastMutex::ScopedLock lock(m_sessionVectorMutex);
+    Poco::FastMutex::ScopedLock lock(m_sessionMapMutex);
     
-    std::vector<RTPSession*>::iterator result = find( m_sessionVector.begin( ), m_sessionVector.end( ), s );
+    std::map<int,RTPSession*>::iterator r = m_sessionMap.find(s->SessionID);
     
-    if(result !=m_sessionVector.end())
+    if(r !=m_sessionMap.end())
     {
         m_logger.information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
-        (*result)->SessionID, (*result)->listenVideoPort, (*result)->listenAudioPort, (*result)->fileName, (*result)->videoFrequency);
+        r->second->SessionID, r->second->listenVideoPort, r->second->listenAudioPort, r->second->fileName, r->second->videoFrequency);
         
-        delete (*result)->rtpHandler;
-        m_sessionVector.erase(result);
+        if(s->rtpHandler != NULL)
+        {
+            delete r->second->rtpHandler;
+        }
+        m_sessionMap.erase(r);
     }
     else
     {

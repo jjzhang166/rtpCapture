@@ -18,13 +18,15 @@ public:
         
     void addCaptureRtpSession(RTPSession *s);
     void delCaptureRtpSession(RTPSession *s);
+    
+    void onRTPData(int session, char* data, int len);
 public:
     Poco::MemoryPool            m_memoryPool;
 private:
     Poco::Net::SocketReactor    m_reactor;
     Poco::Thread                m_thread;
-    std::vector<RTPSession*>    m_sessionVector;
-    Poco::FastMutex             m_sessionVectorMutex;
+    std::map<int,RTPSession*>   m_sessionMap;
+    Poco::FastMutex             m_sessionMapMutex;
     Poco::Logger&               m_logger;
 };
 

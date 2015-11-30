@@ -22,6 +22,16 @@ RTPCaptureSDK::~RTPCaptureSDK()
 {
 }
 
+void RTPCaptureSDK::onRTPData(int session, char* data, int len)
+{
+    m_receiverCenter->onRTPData(session, data, len);
+}
+
+int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int videoFrequency)
+{
+    return addCaptureRtpSession(fileName, 0, 0, videoFrequency);
+}
+
 int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenVideoPort, int listenAudioPort, int videoFrequency)
 {
     // TODO 如果端口、文件名已经存在异常处理
@@ -34,26 +44,26 @@ int RTPCaptureSDK::addCaptureRtpSession(std::string fileName, int listenVideoPor
     
     m_receiverCenter->addCaptureRtpSession(s);
     m_captureCenter->addCaptureRtpSession(s);
-    m_sessionVector.push_back(s);
+    m_sessionMap[s->SessionID] = s;
     
     Poco::Logger::get("RTPCaptureSDK").information("Add Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
     s->SessionID, s->listenVideoPort, s->listenAudioPort, s->fileName, s->videoFrequency);
     
     return s->SessionID;
 }
+
 void RTPCaptureSDK::delCaptureRtpSession(int session)
-{    
-    std::vector<RTPSession*>::iterator result = find_if( m_sessionVector.begin(), m_sessionVector.end(), session_finder(session));
+{
+    std::map<int,RTPSession*>::iterator r = m_sessionMap.find(session);
     
-    if(result !=m_sessionVector.end())
+    if(r != m_sessionMap.end())
     {
         Poco::Logger::get("RTPCaptureSDK").information("Del Session sessionid[%d] videoPort[%d] audioPort[%d] fileName[%s] videoFrequency[%d] success.",\
-        (*result)->SessionID, (*result)->listenVideoPort, (*result)->listenAudioPort, (*result)->fileName, (*result)->videoFrequency);
-        
-        m_receiverCenter->delCaptureRtpSession(*result);
-        m_captureCenter->delCaptureRtpSession(*result);
-        delete *result;
-        m_sessionVector.erase(result);
+        r->second->SessionID, r->second->listenVideoPort, r->second->listenAudioPort, r->second->fileName, r->second->videoFrequency);
+               
+        m_captureCenter->delCaptureRtpSession(r->second);
+        delete r->second;
+        m_sessionMap.erase(r);
     }
     else
     {
