@@ -26,12 +26,13 @@ void ReceiverCenter::onRTPData(int session, char* data, int len)
     
     if(r != m_sessionMap.end())
     {
-        if(len < m_memoryPool.blockSize())
+        if(len > m_memoryPool.blockSize())
         {
             Poco::Logger::get("RTPCaptureSDK").information("Session [%d] data len[%d] is overflow.", session, len);
             return;
         }
         void *buffer = m_memoryPool.get();
+        memcpy(buffer, data, len);
           
         RTPSession::buffer_node node;
         node.buffer = buffer;
