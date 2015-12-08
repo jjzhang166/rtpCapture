@@ -3,11 +3,13 @@ PROJECT(RTPCaptureSDK)
 
 INCLUDE_DIRECTORIES($ENV{PWD}/../../../../include)
 INCLUDE_DIRECTORIES($ENV{PWD}/../../../../include/srs)
-set(LIBRARY_OUTPUT_PATH $ENV{PWD}/../../demo/lib)
+set(LIBRARY_OUTPUT_PATH $ENV{PWD}/../../cdemo/lib)
 
-ADD_LIBRARY(RTPCaptureSDK ../../src/RTPHandler.cpp 
+add_definitions("-fPIC")
+
+ADD_LIBRARY(RTPCaptureSDK SHARED ../../src/RTPHandler.cpp 
                           ../../src/RTPDump.cpp 
                           ../../src/CaptureCenter.cpp 
                           ../../src/ReceiverCenter.cpp 
-                          ../../src/RTPCaptureSDK.cpp)
-
+                          ../../src/RTPCaptureSDK.cpp
+                          ../../src/RTPCapture.cpp)
