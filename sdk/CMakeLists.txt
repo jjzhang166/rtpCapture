@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 PROJECT(RTPCaptureSDK)
 
-INCLUDE_DIRECTORIES($ENV{PWD}/../../../../include)
-INCLUDE_DIRECTORIES($ENV{PWD}/../../../../include/srs)
-set(LIBRARY_OUTPUT_PATH $ENV{PWD}/../../cdemo/lib)
+INCLUDE_DIRECTORIES($ENV{PWD}/../../3rd-party/include)
+INCLUDE_DIRECTORIES($ENV{PWD}/../../3rd-party/include/srs)
+set(LIBRARY_OUTPUT_PATH $ENV{PWD}/../../3rd-party/lib)
 
 add_definitions("-fPIC")
 
